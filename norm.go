@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"unicode"
-	"io/ioutil"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"golang.org/x/text/transform"
