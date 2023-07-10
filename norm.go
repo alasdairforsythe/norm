@@ -10,19 +10,27 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+
+// Adds a leading space if there isn't one already.
 func AddLeadingSpace(b []byte) []byte {
+	if len(b) == 0 {
+		return b
+	}
+	if b[0] == ' ' {
+		return b
+	}
 	var new []byte
 	if cap(b) > len(b) {
 		new = b[0 : len(b)+1]
 	} else {
 		new = make([]byte, len(b)+1)
 	}
-	new[0] = ' '
 	copy(new[1:], b)
+	new[0] = ' '
 	return new
 }
 
-
+// Removes preceding and trailing whitespace (& some non-printable characters).
 func Trim(b []byte) []byte {
 	var i int
 	var c byte
@@ -31,15 +39,39 @@ func Trim(b []byte) []byte {
 			break
 		}
 	}
-	for ii := len(b) - 1; ii >= 0; ii-- {
-		if b[ii] > 32 {
-			return b[i : ii+1]
+	for i2 := len(b) - 1; i2 >= 0; i2-- {
+		if b[i2] > 32 {
+			return b[i : i2+1]
 		}
 	}
 	return []byte{}
 }
 
-// All sequences of 2 or more spaces are converted to single spaces
+// Removes preceding and trailing whitespace (& some non-printable characters), then adds space to the front.
+func TrimAndAddLeadingSpace(b []byte) []byte {
+	var i int
+	var c byte
+	for i, c = range b {
+		if c > 32 {
+			break
+		}
+	}
+	var i2 int
+	for i2 = len(b) - 1; i2 >= 0; i2-- {
+		if b[i2] > 32 {
+			break
+		}
+	}
+	if i == 0 {
+		return AddLeadingSpace(b[0:i2])
+	} else if i2 < 0 {
+		return []byte{}
+	}
+	b[i-1] = ' '
+	return b[i-1 : i2+1]
+}
+
+// All sequences of 2 or more spaces are converted into single spaces.
 func Space(input []byte) []byte {
 	var on uintptr
 	var last byte
@@ -58,7 +90,8 @@ func Space(input []byte) []byte {
 	return input[0:on]
 }
 
-func Apos(input []byte) []byte {
+// Curly UTF-8 apostrophes and quotes are converted into ASCII.
+func Quotemark(input []byte) []byte {
 	var on uintptr
 	for i, b := range input {
 		if b != 152 && b != 153 && b != 156 && b != 157 {
@@ -83,7 +116,8 @@ func Apos(input []byte) []byte {
 	return input[0:on]
 }
 
-func SpaceAndApos(input []byte) []byte {
+// All sequences of 2 or more spaces are converted into single spaces, and curly UTF-8 apostrophes and quotes are converted into ASCII.
+func SpaceAndQuotemark(input []byte) []byte {
 	var on uintptr
 	var last byte
 	for i, b := range input {
@@ -118,6 +152,7 @@ func SpaceAndApos(input []byte) []byte {
 	return input[0:on]
 }
 
+// Performs UTF-8 NFD normalization.
 func NFD(input []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -133,6 +168,7 @@ func NFD(input []byte) (output []byte, err error) {
 	return
 }
 
+// Removes accents from UTF-8 text.
 func Accents(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -145,6 +181,7 @@ func Accents(b []byte) (output []byte, err error) {
 	return
 }
 
+// Lowercases UTF-8 text.
 func Case(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -160,6 +197,7 @@ func Case(b []byte) (output []byte, err error) {
 	return
 }
 
+// Lowercase and remove accents from UTF-8 text.
 func CaseAndAccents(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -176,6 +214,7 @@ func CaseAndAccents(b []byte) (output []byte, err error) {
 	return
 }
 
+// Lowercases and performs UTF-8 NFD normalization.
 func NFDAndCase(b []byte) (output []byte, err error) {
 	t := transform.Chain(norm.NFD, cases.Lower(language.Und))
 	buf := bytes.NewBuffer(make([]byte, 0, len(b) + (len(b) / 3) + 4))
