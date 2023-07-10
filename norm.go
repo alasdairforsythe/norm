@@ -15,6 +15,36 @@ type Normalizer struct {
 	Flag uint8
 }
 
+func NewNormalizer(s string) (Normalizer, error) {
+	var n Normalizer
+	var err error
+	for _, each := range strings.Split(strings.ToLower(s), " ") {
+		switch each {
+			case "nfd":
+				n.Flag |= 1
+			case "lowercase", "case":
+				n.Flag |= 2
+			case "accents", "accent":
+				n.Flag |= 4
+			case "quotemarks", "quotemark", "apostrophes":
+				n.Flag |= 8
+			case "collapse", "spaces", "space", "doublespace", "doublespaces":
+				n.Flag |= 16
+			case "trim", "trimspace", "trim-space":
+				n.Flag |= 32
+			case "leadingspace", "leading-space", "addleadingspace":
+				n.Flag |= 64
+			case "unixlines", "unix-lines", "newlines", "lines":
+				n.Flag |= 128
+			case "":
+				// do nothing
+			default:
+				err = errors.New(`Unrecognized normalization parameter: ` + each)
+		}
+	}
+	return n, err
+}
+
 func (n Normalizer) String() string {
 	var s string
 	if n.Flag & 1 != 0 {
@@ -36,10 +66,10 @@ func (n Normalizer) String() string {
 		s += "trim "
 	}
 	if n.Flag & 64 != 0 {
-		s += "leading-space "
+		s += "leadingspace "
 	}
 	if n.Flag & 128 != 0 {
-		s += "lines "
+		s += "newlines "
 	}
 	return strings.TrimSpace(s)
 }
@@ -74,36 +104,6 @@ func (n Normalizer) SpecifiedLeadingSpace() bool {
 
 func (n Normalizer) SpecifiedLines() bool {
 	return n.Flag & 128 != 0
-}
-
-func NewNormalizer(s string) (Normalizer, error) {
-	var n Normalizer
-	var err error
-	for _, each := range strings.Split(strings.ToLower(s), " ") {
-		switch each {
-			case "nfd":
-				n.Flag |= 1
-			case "lowercase", "case":
-				n.Flag |= 2
-			case "accents", "accent":
-				n.Flag |= 4
-			case "quotemarks", "quotemark", "apostrophes":
-				n.Flag |= 8
-			case "collapse", "spaces", "space", "doublespace", "doublespaces":
-				n.Flag |= 16
-			case "trim", "trimspace", "trim-space":
-				n.Flag |= 32
-			case "leadingspace", "leading-space", "addleadingspace":
-				n.Flag |= 64
-			case "unixlines", "unix-lines", "newlines", "lines":
-				n.Flag |= 128
-			case "":
-				// do nothing
-			default:
-				err = errors.New(`Unrecognized normalization parameter: ` + each)
-		}
-	}
-	return n, err
 }
 
 func (n Normalizer) Normalize(data []byte) ([]byte, error) {
@@ -368,7 +368,7 @@ func NFD(input []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic into error
-			err = errors.New(`Panicked`)
+			err = errors.New(`Normalization Error`)
 		}
 	}()
 	normalized := bytes.NewBuffer(make([]byte, 0, len(input) + (len(input) / 3) + 4))
@@ -384,7 +384,7 @@ func Accents(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic into error
-			err = errors.New(`Panicked`)
+			err = errors.New(`Normalization Error`)
 		}
 	}()
 	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn))
@@ -397,7 +397,7 @@ func Case(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic into error
-			err = errors.New(`Panicked`)
+			err = errors.New(`Normalization Error`)
 		}
 	}()
 	buf := bytes.NewBuffer(make([]byte, 0, len(b) + (len(b) / 3) + 4))
@@ -413,7 +413,7 @@ func CaseAndAccents(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic into error
-			err = errors.New(`Panicked`)
+			err = errors.New(`Normalization Error`)
 		}
 	}()
 	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), cases.Lower(language.Und))
@@ -430,7 +430,7 @@ func NFDAndCase(b []byte) (output []byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic into error
-			err = errors.New(`Panicked`)
+			err = errors.New(`Normalization Error`)
 		}
 	}()
 	t := transform.Chain(norm.NFD, cases.Lower(language.Und))
