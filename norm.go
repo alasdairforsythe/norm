@@ -37,7 +37,7 @@ func NewNormalizer(s string) (Normalizer, error) {
 			case "unixlines", "unix-lines", "newlines", "lines":
 				n.Flag |= 128
 			case "", "none":
-				// do nothing
+				// skip
 			default:
 				err = errors.New(`Unrecognized normalization parameter: ` + each)
 		}
@@ -47,29 +47,32 @@ func NewNormalizer(s string) (Normalizer, error) {
 
 func (n Normalizer) String() string {
 	var s string
+	if n.Flag == 0 {
+		return `None`
+	}
 	if n.Flag & 1 != 0 {
-		s = "nfd "
+		s = "NFD "
 	}
 	if n.Flag & 2 != 0 {
-		s += "lowercase "
+		s += "Lowercase "
 	}
 	if n.Flag & 4 != 0 {
-		s += "accents "
+		s += "Accents "
 	}
 	if n.Flag & 8 != 0 {
-		s += "quotemarks "
+		s += "Quotemarks "
 	}
 	if n.Flag & 16 != 0 {
-		s += "collapse "
+		s += "Collapse "
 	}
 	if n.Flag & 32 != 0 {
-		s += "trim "
+		s += "Trim "
 	}
 	if n.Flag & 64 != 0 {
-		s += "leadingspace "
+		s += "LeadingSpace "
 	}
 	if n.Flag & 128 != 0 {
-		s += "newlines "
+		s += "NewLines "
 	}
 	return strings.TrimSpace(s)
 }
@@ -109,19 +112,26 @@ func (n Normalizer) SpecifiedLines() bool {
 func (n Normalizer) Normalize(data []byte) ([]byte, error) {
 	if n.Flag == 1 { // likely
 		return NFD(data)
+	} else if n.Flag == 0 {
+		return data, nil
 	}
 	// unixlines
-	if n.Flag & 128 != 0 {
-		if n.Flag & 16 != 0 && n.Flag & 8 != 0 {
-			data = CollapseAndQuotemarksAndUnixLines(data)
-			goto skipahead
+	if n.Flag & 128 != 0 { // unixlines
+		if n.Flag & 16 != 0 { // collapse
+			if n.Flag & 8 != 0 { // quotesmarks
+				data = CollapseAndQuotemarksAndUnixLines(data)
+				goto skipahead
+			} else {
+				data = CollapseAndUnixLines(data)
+				goto skipahead
+			}
 		} else {
 			data = UnixLines(data)
 		}
 	}
 	// collapse & quotemark
-	if n.Flag & 8 != 0 {
-		if n.Flag & 16 != 0 { // both
+	if n.Flag & 8 != 0 { // quotemarks
+		if n.Flag & 16 != 0 { // collapse
 			data = CollapseAndQuotemarks(data)
 		} else { // quotemarks
 			data = Quotemarks(data)
@@ -131,8 +141,8 @@ func (n Normalizer) Normalize(data []byte) ([]byte, error) {
 	}
 skipahead:
 	// trim, leading-space
-	if n.Flag & 32 != 0 {
-		if n.Flag & 64 != 0 { // both
+	if n.Flag & 32 != 0 { // trim
+		if n.Flag & 64 != 0 { // leadingspace
 			data = TrimAndAddLeadingSpace(data)
 		} else { // trim
 			data = Trim(data)
@@ -258,6 +268,34 @@ func UnixLines(input []byte) []byte {
 	return input[0 : on+1]
 }
 
+// Do both in one loop.
+func CollapseAndUnixLines(input []byte) []byte {
+	var on uintptr
+	var last byte
+	for _, b := range input {
+		if b != 32 {
+			if b != '\n' {
+				input[on] = b
+				on++
+			} else {
+				if last == '\r' {
+					input[on-1] = '\n'
+				} else {
+					input[on] = b
+					on++
+				}
+			}
+		} else {
+			if last != 32 {
+				input[on] = 32
+				on++
+			}
+		}
+		last = b
+	}
+	return input[0:on]
+}
+
 // Curly UTF-8 apostrophes and quotes are converted into ASCII.
 func Quotemarks(input []byte) []byte {
 	var on uintptr
@@ -320,7 +358,7 @@ func CollapseAndQuotemarks(input []byte) []byte {
 	return input[0:on]
 }
 
-// All sequences of 2 or more spaces are converted into single spaces, and curly UTF-8 apostrophes and quotes are converted into ASCII.
+// Does all three in one loop.
 func CollapseAndQuotemarksAndUnixLines(input []byte) []byte {
 	var on uintptr
 	var last byte
