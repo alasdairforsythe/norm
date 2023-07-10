@@ -26,7 +26,7 @@ func NewNormalizer(s string) (Normalizer, error) {
 				n.Flag |= 2
 			case "accents", "accent":
 				n.Flag |= 4
-			case "quotemarks", "quotemark", "apostrophes":
+			case "quotemarks", "quotemark", "apostrophes", "quotes":
 				n.Flag |= 8
 			case "collapse", "spaces", "space", "doublespace", "doublespaces":
 				n.Flag |= 16
