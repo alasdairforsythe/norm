@@ -34,7 +34,7 @@ func NewNormalizer(s string) (Normalizer, error) {
 				n.Flag |= 32
 			case "leadingspace", "leading-space", "addleadingspace":
 				n.Flag |= 64
-			case "unixlines", "unix-lines", "newlines", "lines":
+			case "unixlines", "unix-lines", "newlines", "lines", "new-lines":
 				n.Flag |= 128
 			case "", "none":
 				// skip
@@ -72,7 +72,7 @@ func (n Normalizer) String() string {
 		s += "LeadingSpace "
 	}
 	if n.Flag & 128 != 0 {
-		s += "NewLines "
+		s += "UnixLines "
 	}
 	return strings.TrimSpace(s)
 }
@@ -105,7 +105,7 @@ func (n Normalizer) SpecifiedLeadingSpace() bool {
 	return n.Flag & 64 != 0
 }
 
-func (n Normalizer) SpecifiedLines() bool {
+func (n Normalizer) SpecifiedUnixLines() bool {
 	return n.Flag & 128 != 0
 }
 
