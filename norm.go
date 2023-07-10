@@ -44,8 +44,9 @@ func (n Normalizer) String() string {
 	return strings.TrimSpace(s)
 }
 
-func NewNormalizer(s string) Normalizer {
+func NewNormalizer(s string) (Normalizer, error) {
 	var n Normalizer
+	var err error
 	for _, each := range strings.Split(strings.ToLower(s), " ") {
 		switch each {
 			case "nfd":
@@ -64,9 +65,13 @@ func NewNormalizer(s string) Normalizer {
 				n.Flag |= 64
 			case "unixlines", "unix-lines", "newlines", "lines":
 				n.Flag |= 128
+			case "":
+				// do nothing
+			default:
+				err = errors.New(`Unrecognized normalization parameter: ` + each)
 		}
 	}
-	return n
+	return n, err
 }
 
 func (n Normalizer) Normalize(data []byte) ([]byte, error) {
