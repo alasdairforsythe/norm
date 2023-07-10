@@ -44,6 +44,38 @@ func (n Normalizer) String() string {
 	return strings.TrimSpace(s)
 }
 
+func (n Normalizer) SpecifiedNFD() bool {
+	return n.Flag & 1 != 0
+}
+
+func (n Normalizer) SpecifiedLowercase() bool {
+	return n.Flag & 2 != 0
+}
+
+func (n Normalizer) SpecifiedAccents() bool {
+	return n.Flag & 4 != 0
+}
+
+func (n Normalizer) SpecifiedQuotemarks() bool {
+	return n.Flag & 8 != 0
+}
+
+func (n Normalizer) SpecifiedCollapse() bool {
+	return n.Flag & 16 != 0
+}
+
+func (n Normalizer) SpecifiedTrim() bool {
+	return n.Flag & 32 != 0
+}
+
+func (n Normalizer) SpecifiedLeadingSpace() bool {
+	return n.Flag & 64 != 0
+}
+
+func (n Normalizer) SpecifiedLines() bool {
+	return n.Flag & 128 != 0
+}
+
 func NewNormalizer(s string) (Normalizer, error) {
 	var n Normalizer
 	var err error
