@@ -36,7 +36,7 @@ func NewNormalizer(s string) (Normalizer, error) {
 				n.Flag |= 64
 			case "unixlines", "unix-lines", "newlines", "lines":
 				n.Flag |= 128
-			case "":
+			case "", "none":
 				// do nothing
 			default:
 				err = errors.New(`Unrecognized normalization parameter: ` + each)
