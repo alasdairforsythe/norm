@@ -115,7 +115,6 @@ func (n Normalizer) Normalize(data []byte) ([]byte, error) {
 	} else if n.Flag == 0 {
 		return data, nil
 	}
-	// unixlines
 	if n.Flag & 128 != 0 { // unixlines
 		if n.Flag & 16 != 0 { // collapse
 			if n.Flag & 8 != 0 { // quotesmarks
@@ -129,7 +128,6 @@ func (n Normalizer) Normalize(data []byte) ([]byte, error) {
 			data = UnixLines(data)
 		}
 	}
-	// collapse & quotemark
 	if n.Flag & 8 != 0 { // quotemarks
 		if n.Flag & 16 != 0 { // collapse
 			data = CollapseAndQuotemarks(data)
